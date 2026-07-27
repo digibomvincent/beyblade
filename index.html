@@ -1,0 +1,779 @@
+<title>陀螺戰績庫 · Beyblade X</title>
+<style>
+  :root {
+    --bg: #EAEEF3;
+    --surface: #FFFFFF;
+    --surface-2: #F3F6FA;
+    --border: #D5DCE5;
+    --text: #161A20;
+    --text-dim: #59636F;
+    --accent: #D81733;
+    --accent-soft: #fbe1e5;
+    --win: #128A5A;
+    --win-soft: #d7f0e4;
+    --shadow: 0 1px 2px rgba(20,30,45,.06), 0 6px 18px rgba(20,30,45,.06);
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1116;
+      --surface: #181D25;
+      --surface-2: #212834;
+      --border: #2B333F;
+      --text: #E9EDF2;
+      --text-dim: #8B95A3;
+      --accent: #FF3B4E;
+      --accent-soft: #33191d;
+      --win: #35C88A;
+      --win-soft: #16302a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #EAEEF3; --surface: #FFFFFF; --surface-2: #F3F6FA; --border: #D5DCE5;
+    --text: #161A20; --text-dim: #59636F; --accent: #D81733; --accent-soft: #fbe1e5;
+    --win: #128A5A; --win-soft: #d7f0e4; --shadow: 0 1px 2px rgba(20,30,45,.06), 0 6px 18px rgba(20,30,45,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1116; --surface: #181D25; --surface-2: #212834; --border: #2B333F;
+    --text: #E9EDF2; --text-dim: #8B95A3; --accent: #FF3B4E; --accent-soft: #33191d;
+    --win: #35C88A; --win-soft: #16302a; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .app {
+    max-width: 520px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg);
+    padding-bottom: 88px;
+    position: relative;
+  }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 18px 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo {
+    width: 34px; height: 34px; flex: none;
+    display: grid; place-items: center;
+    color: var(--accent);
+  }
+  .logo svg { width: 34px; height: 34px; }
+  .spin { transform-origin: 50% 50%; animation: spin 3.2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  .title-block .eyebrow {
+    font-size: 10px; letter-spacing: .22em; font-weight: 700;
+    color: var(--accent); text-transform: uppercase; margin: 0;
+  }
+  .title-block h1 {
+    font-size: 19px; font-weight: 800; margin: 1px 0 0;
+    letter-spacing: -.01em;
+  }
+  .theme-btn {
+    margin-left: auto; background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text-dim); width: 38px; height: 38px; border-radius: 11px;
+    display: grid; place-items: center; cursor: pointer; font-size: 17px;
+  }
+  .theme-btn:active { transform: scale(.94); }
+
+  main { padding: 16px 16px 4px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fade .22s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tab-panel.active { animation: none; } }
+
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin: 4px 2px 12px;
+  }
+  .section-head h2 { font-size: 15px; font-weight: 800; margin: 0; letter-spacing: .01em; }
+  .section-head .count { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--sans); font-size: 14px; font-weight: 700;
+    border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    padding: 11px 16px; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-block { width: 100%; }
+  .btn-ghost { background: transparent; }
+  .btn-sm { padding: 7px 11px; font-size: 12.5px; border-radius: 9px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: var(--shadow);
+    padding: 15px 16px; margin-bottom: 12px;
+  }
+  .config-card { position: relative; }
+  .config-card .cc-top { display: flex; align-items: flex-start; gap: 10px; }
+  .config-card h3 { margin: 0; font-size: 16.5px; font-weight: 800; letter-spacing: -.01em; }
+  .parts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .part {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text); padding: 3px 9px 3px 7px; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .part b { color: var(--text-dim); font-weight: 700; font-size: 9px; letter-spacing: .08em; }
+  .note-line { font-size: 12.5px; color: var(--text-dim); margin-top: 10px; display: flex; align-items: center; }
+  .note-line b { font-size: 9px; font-weight: 700; letter-spacing: .08em; color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); padding: 2px 6px; border-radius: 6px; margin-right: 8px; flex: none; }
+  .name-preview { font-size: 13px; color: var(--text-dim); text-align: center; margin: 2px 0 16px; padding: 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; }
+  .name-preview b { color: var(--accent); font-family: var(--mono); font-size: 15.5px; letter-spacing: -.01em; }
+  .cc-stats {
+    display: flex; align-items: center; gap: 13px; margin-top: 13px;
+    padding: 12px 0 0; border: 0; border-top: 1px solid var(--border);
+    width: 100%; background: none; text-align: left; cursor: pointer;
+    font-family: var(--sans); color: var(--text);
+  }
+  .cc-stats:active { opacity: .55; }
+  .score-wrap { display: flex; flex-direction: column; gap: 3px; }
+  .score { font-family: var(--mono); font-weight: 700; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .score .pf { color: var(--win); } .score .pa { color: var(--accent); }
+  .score .colon { color: var(--text-dim); margin: 0 4px; }
+  .scorelbl { font-size: 10px; letter-spacing: .1em; color: var(--text-dim); font-weight: 700; }
+  .wl { font-family: var(--mono); font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .wl .w { color: var(--win); font-weight: 700; }
+  .wl .l { color: var(--accent); font-weight: 700; }
+  .chev { margin-left: auto; font-size: 12.5px; color: var(--accent); font-weight: 700; white-space: nowrap; flex: none; }
+  .row-actions { display: flex; gap: 7px; margin-top: 13px; }
+
+  /* Finish selector */
+  .finish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .finish-grid button {
+    padding: 13px 8px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text); font-weight: 700; font-size: 15px;
+    cursor: pointer; font-family: var(--sans); display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .finish-grid button small { font-family: var(--mono); font-size: 12px; color: var(--text-dim); font-weight: 700; }
+  .finish-grid button.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .finish-grid button.sel small { color: var(--accent); }
+  .sc-w { color: var(--win); font-weight: 700; }
+  .sc-l { color: var(--accent); font-weight: 700; }
+
+  /* Detail modal */
+  .dt-head { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 18px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 18px; }
+  .dt-big { font-family: var(--mono); font-size: 44px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; text-align: center; }
+  .dt-big.pf { color: var(--win); } .dt-big.pa { color: var(--accent); }
+  .dt-sep { font-size: 30px; color: var(--text-dim); font-family: var(--mono); }
+  .dt-k { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-top: 6px; text-align: center; }
+  .dt-sec { margin-bottom: 16px; }
+  .dt-title { font-size: 12.5px; font-weight: 800; margin: 0 2px 6px; }
+  .dt-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+  .dt-row:last-child { border-bottom: 0; }
+  .dt-name { flex: 1; font-weight: 700; font-size: 14.5px; }
+  .dt-name small { color: var(--text-dim); font-weight: 600; font-size: 11px; margin-left: 7px; }
+  .dt-count { font-family: var(--mono); font-size: 13px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .dt-pts { font-family: var(--mono); font-weight: 700; font-size: 15px; width: 46px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-dim); }
+  .dt-pts.pf { color: var(--win); } .dt-pts.pa { color: var(--accent); }
+
+  /* Result toggle */
+  .toggle { display: flex; gap: 8px; }
+  .toggle button {
+    flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text-dim); font-weight: 800; font-size: 15px;
+    cursor: pointer; font-family: var(--sans);
+  }
+  .toggle button[data-on="win"].sel { background: var(--win-soft); border-color: var(--win); color: var(--win); }
+  .toggle button[data-on="loss"].sel { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  /* Forms */
+  label.fld { display: block; margin-bottom: 13px; }
+  label.fld > span {
+    display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--text-dim); margin-bottom: 6px;
+  }
+  input, select, textarea {
+    width: 100%; font-family: var(--sans); font-size: 15px;
+    padding: 11px 12px; border-radius: 11px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); -webkit-appearance: none; appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+  }
+  select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 34px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* Battle log rows */
+  .blog { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+  .blog:last-child { border-bottom: 0; }
+  .res-dot { width: 40px; height: 40px; border-radius: 11px; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 15px; font-family: var(--mono); }
+  .res-dot.win { background: var(--win-soft); color: var(--win); }
+  .res-dot.loss { background: var(--accent-soft); color: var(--accent); }
+  .blog .bl-main { flex: 1; min-width: 0; }
+  .blog .bl-main .bl-cfg { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .blog .bl-main .bl-meta { font-size: 12px; color: var(--text-dim); font-family: var(--mono); margin-top: 1px; }
+  .blog .del { background: none; border: none; color: var(--text-dim); font-size: 19px; cursor: pointer; padding: 6px; flex: none; }
+
+  /* Stats hero */
+  .hero {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+    box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; text-align: center;
+  }
+  .hero .big {
+    font-family: var(--mono); font-size: 52px; font-weight: 700; line-height: 1;
+    font-variant-numeric: tabular-nums; letter-spacing: -.03em;
+  }
+  .hero .big span { font-size: 24px; color: var(--text-dim); }
+  .hero .lbl { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-top: 6px; }
+  .hero .split { display: flex; justify-content: center; gap: 26px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .hero .split div { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .hero .split .n { font-size: 22px; font-weight: 700; }
+  .hero .split .k { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; margin-top: 2px; }
+  .n.w { color: var(--win); } .n.l { color: var(--accent); }
+
+  .rank-row { display: flex; align-items: center; gap: 11px; padding: 11px 2px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .rank-row:active { opacity: .55; }
+  .rank-row:last-child { border-bottom: 0; }
+  .rank-no { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--text-dim); width: 20px; text-align: center; flex: none; }
+  .rank-row .rn { flex: 1; min-width: 0; }
+  .rank-row .rn .nm { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row .rn .parts-mini { font-size: 11px; color: var(--text-dim); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-row .rwr { font-family: var(--mono); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; flex: none; text-align: right; }
+  .rank-row .rwl { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-align: right; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 50px 24px; color: var(--text-dim); }
+  .empty .ico { font-size: 40px; opacity: .5; }
+  .empty p { font-size: 14px; margin: 12px 0 0; }
+
+  /* Bottom nav */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    max-width: 520px; margin: 0 auto;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    display: flex; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  }
+  nav button {
+    flex: 1; background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--text-dim); font-family: var(--sans); font-size: 10.5px; font-weight: 700;
+    padding: 5px 0; border-radius: 10px;
+  }
+  nav button svg { width: 23px; height: 23px; }
+  nav button.active { color: var(--accent); }
+
+  /* FAB */
+  .fab {
+    position: fixed; z-index: 25; bottom: calc(84px + env(safe-area-inset-bottom)); right: 50%;
+    transform: translateX(238px);
+    width: 54px; height: 54px; border-radius: 17px;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
+    font-size: 28px; font-weight: 400; box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 45%, transparent);
+    display: grid; place-items: center;
+  }
+  @media (max-width: 519px) { .fab { right: 18px; transform: none; } }
+  .fab:active { transform: translateX(238px) scale(.92); }
+  @media (max-width: 519px) { .fab:active { transform: scale(.92); } }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 50; background: rgba(10,14,20,.5);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface); width: 100%; max-width: 520px;
+    border-radius: 22px 22px 0 0; padding: 8px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height: 92vh; overflow-y: auto; animation: slideup .26s cubic-bezier(.2,.8,.3,1);
+  }
+  @keyframes slideup { from { transform: translateY(100%); } to { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .modal { animation: none; } }
+  .grab { width: 40px; height: 4px; background: var(--border); border-radius: 3px; margin: 6px auto 14px; }
+  .modal h2 { font-size: 18px; font-weight: 800; margin: 0 0 16px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+  .backup { display: flex; gap: 10px; margin-top: 8px; }
+  .hint { font-size: 12px; color: var(--text-dim); text-align: center; margin: 14px 4px 0; line-height: 1.5; }
+  .danger { color: var(--accent); }
+</style>
+
+<div class="app">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 40 40" fill="none">
+        <g class="spin">
+          <circle cx="20" cy="20" r="15" stroke="currentColor" stroke-width="2.4"/>
+          <path d="M20 5 L20 12 M35 20 L28 20 M20 35 L20 28 M5 20 L12 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="5" fill="currentColor"/>
+        </g>
+      </svg>
+    </div>
+    <div class="title-block">
+      <p class="eyebrow">Beyblade X Tracker</p>
+      <h1>陀螺戰績庫</h1>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="切換深/淺色">◐</button>
+  </header>
+
+  <main>
+    <!-- CONFIGS -->
+    <section class="tab-panel active" id="tab-configs">
+      <div class="section-head">
+        <h2>我的配置</h2>
+        <span class="count" id="cfgCount"></span>
+      </div>
+      <div id="cfgList"></div>
+    </section>
+
+    <!-- BATTLES -->
+    <section class="tab-panel" id="tab-battles">
+      <div class="section-head">
+        <h2>對戰記錄</h2>
+        <span class="count" id="batCount"></span>
+      </div>
+      <div id="batList"></div>
+    </section>
+
+    <!-- STATS -->
+    <section class="tab-panel" id="tab-stats">
+      <div class="section-head"><h2>戰績統計</h2></div>
+      <div id="statsBody"></div>
+    </section>
+  </main>
+
+  <button class="fab" id="fab" aria-label="新增">+</button>
+
+  <nav>
+    <button class="active" data-tab="configs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 4v3M20 12h-3M12 20v-3M4 12h3"/></svg>
+      配置
+    </button>
+    <button data-tab="battles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4l5.5 5.5-9 9-5.5-5.5z"/><path d="M4 20l3-3"/><path d="M17 3l4 4"/></svg>
+      對戰
+    </button>
+    <button data-tab="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      統計
+    </button>
+  </nav>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+"use strict";
+const CFG_KEY = "bx_configs_v1", BAT_KEY = "bx_battles_v1", THEME_KEY = "bx_theme";
+const CAPS = ["武神","隕星","突擊","獅鷲","銀狼","神杖","爆刃","堡壘","閃擊","鞭打","邪神"];
+const LOCKS = ["150","160","370","450","570","660","870","960"];
+const AXES = ["I","FF","J","FB","Nr","H","L","Y","A","DB","LF","UN"];
+const NO_LOCK_CAPS = ["武神","獅鷲"];
+const FINISHES = [
+  { key:"spin",   label:"轉停", pts:1 },
+  { key:"burst",  label:"爆裂", pts:2 },
+  { key:"over",   label:"擊飛", pts:2 },
+  { key:"xtreme", label:"極限", pts:3 },
+];
+// 寫在程式碼裡的預設配置（每台裝置都會有；固定 id 讓戰績跨裝置對得上）。
+// 要新增／刪除，改這份清單就好。
+const DEFAULT_CONFIGS = [
+  { id:"d-shijiu-j",       cap:"獅鷲", lock:"",    axis:"J", note:"" },
+  { id:"d-shenzhang-160h", cap:"神杖", lock:"160", axis:"H", note:"" },
+  { id:"d-baoren-150i",    cap:"爆刃", lock:"150", axis:"I", note:"" },
+];
+
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const load = k => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e){ return []; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let configs = load(CFG_KEY);
+let battles = load(BAT_KEY);
+
+// 把程式碼裡的預設配置補進來（依 id 判斷，只新增、不覆蓋、不刪除既有資料）
+(function seedDefaults(){
+  let changed = false;
+  DEFAULT_CONFIGS.forEach(d => {
+    if (!configs.some(c => c.id === d.id)) { configs.push({ ...d, createdAt: "seed" }); changed = true; }
+  });
+  if (changed) save(CFG_KEY, configs);
+})();
+let currentTab = "configs";
+
+/* ---------- Theme ---------- */
+function applyTheme(t){
+  if (t) document.documentElement.setAttribute("data-theme", t);
+  else document.documentElement.removeAttribute("data-theme");
+}
+applyTheme(localStorage.getItem(THEME_KEY));
+$("#themeBtn").onclick = () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const isDark = cur ? cur === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = isDark ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+};
+
+/* ---------- Stats helpers ---------- */
+function statsFor(configId){
+  const bs = battles.filter(b => b.configId === configId);
+  const w = bs.filter(b => b.result === "win").length;
+  const l = bs.length - w;
+  let pf = 0, pa = 0;
+  const forBreak = {}, againstBreak = {};
+  FINISHES.forEach(f => { forBreak[f.key] = 0; againstBreak[f.key] = 0; });
+  bs.forEach(b => {
+    const f = FINISHES.find(x => x.key === b.finish);
+    const pts = f ? f.pts : 0;
+    if (b.result === "win"){ pf += pts; if (f) forBreak[f.key]++; }
+    else { pa += pts; if (f) againstBreak[f.key]++; }
+  });
+  return { w, l, total: bs.length, rate: bs.length ? Math.round(w / bs.length * 100) : null, pf, pa, forBreak, againstBreak };
+}
+function displayName(c){
+  if (!c) return "（已刪除配置）";
+  if (c.cap){
+    const p = [c.cap];
+    if (c.lock && !NO_LOCK_CAPS.includes(c.cap)) p.push(c.lock);
+    if (c.axis) p.push(c.axis);
+    return p.join("");
+  }
+  return c.name || "未命名配置";
+}
+function cfgName(id){ return displayName(configs.find(c => c.id === id)); }
+function partsLine(c){ return c.note || [c.cap, c.lock, c.axis].filter(Boolean).join("  ·  "); }
+
+/* ---------- Render: Configs ---------- */
+function renderConfigs(){
+  $("#cfgCount").textContent = configs.length ? configs.length + " 組" : "";
+  const el = $("#cfgList");
+  if (!configs.length){
+    el.innerHTML = emptyState("◎", "還沒有配置", "點右下角 ＋ 建立你的第一組陀螺");
+    return;
+  }
+  el.innerHTML = configs.map(c => {
+    const s = statsFor(c.id);
+    const wrPct = s.rate === null ? "" : " · " + s.rate + "%";
+    return `<div class="card config-card">
+      <div class="cc-top">
+        <div style="flex:1;min-width:0">
+          <h3>${esc(displayName(c))}</h3>
+          ${c.note ? `<div class="note-line"><b>備注</b>${esc(c.note)}</div>` : ""}
+        </div>
+      </div>
+      <button class="cc-stats" onclick="showDetail('${c.id}')" aria-label="查看得失分明細">
+        <span class="score-wrap">
+          <span class="score"><b class="pf">${s.pf}</b><span class="colon">:</span><b class="pa">${s.pa}</b></span>
+          <span class="scorelbl">得 : 失分</span>
+        </span>
+        <span class="wl">${s.w}勝 ${s.l}敗${wrPct}</span>
+        <span class="chev">明細 ›</span>
+      </button>
+      <div class="row-actions">
+        <button class="btn btn-sm btn-accent" onclick="quickBattle('${c.id}')">＋ 記一戰</button>
+        <button class="btn btn-sm btn-ghost" onclick="editConfig('${c.id}')">編輯</button>
+        <button class="btn btn-sm btn-ghost danger" style="margin-left:auto" onclick="delConfig('${c.id}')">刪除</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- Render: Battles ---------- */
+function renderBattles(){
+  $("#batCount").textContent = battles.length ? battles.length + " 場" : "";
+  const el = $("#batList");
+  if (!battles.length){
+    el.innerHTML = emptyState("⚔", "還沒有對戰記錄", "在配置卡上點「記一戰」，或右下角 ＋");
+    return;
+  }
+  const sorted = [...battles].sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  el.innerHTML = `<div class="card" style="padding:4px 12px">` + sorted.map(b => {
+    const win = b.result === "win";
+    const f = FINISHES.find(x => x.key === b.finish);
+    const pts = f ? f.pts : 0;
+    const scoreTxt = `<span class="${win?'sc-w':'sc-l'}">${win?'得':'失'}${pts}分</span> · ${f ? f.label : "—"}`;
+    const meta = [scoreTxt, b.opponent ? "vs " + esc(b.opponent) : ""].filter(Boolean).join("  ·  ");
+    return `<div class="blog">
+      <div class="res-dot ${win?'win':'loss'}">${win?'勝':'敗'}</div>
+      <div class="bl-main">
+        <div class="bl-cfg">${esc(cfgName(b.configId))}</div>
+        <div class="bl-meta">${meta}</div>
+      </div>
+      <button class="del" onclick="delBattle('${b.id}')" aria-label="刪除">×</button>
+    </div>`;
+  }).join("") + `</div>`;
+}
+
+/* ---------- Render: Stats ---------- */
+function renderStats(){
+  const el = $("#statsBody");
+  const total = battles.length;
+  const w = battles.filter(b => b.result === "win").length;
+  const l = total - w;
+  const rate = total ? Math.round(w/total*100) : 0;
+  let pfT = 0, paT = 0;
+  battles.forEach(b => { const f = FINISHES.find(x => x.key === b.finish); const p = f ? f.pts : 0; if (b.result === "win") pfT += p; else paT += p; });
+
+  let html = `<div class="hero">
+    <div class="big">${total ? rate : "—"}<span>${total?"%":""}</span></div>
+    <div class="lbl">總勝率 · ${total} 場</div>
+    <div class="split">
+      <div><div class="n w">${w}</div><div class="k">勝</div></div>
+      <div><div class="n l">${l}</div><div class="k">敗</div></div>
+      <div><div class="n w">${pfT}</div><div class="k">總得分</div></div>
+      <div><div class="n l">${paT}</div><div class="k">總失分</div></div>
+    </div>
+  </div>`;
+
+  const ranked = configs.map(c => ({ c, s: statsFor(c.id) }))
+    .filter(x => x.s.total > 0)
+    .sort((a,b) => b.s.rate - a.s.rate || b.s.total - a.s.total);
+
+  if (ranked.length){
+    html += `<div class="section-head" style="margin-top:20px"><h2>配置排行</h2><span class="count">依勝率</span></div>`;
+    html += `<div class="card" style="padding:4px 14px">` + ranked.map((x, i) => `
+      <div class="rank-row" onclick="showDetail('${x.c.id}')">
+        <div class="rank-no">${i+1}</div>
+        <div class="rn">
+          <div class="nm">${esc(displayName(x.c))}</div>
+          <div class="parts-mini">得 ${x.s.pf} · 失 ${x.s.pa}${x.c.note ? " · " + esc(x.c.note) : ""}</div>
+        </div>
+        <div>
+          <div class="rwr" style="color:${x.s.rate>=50?'var(--win)':'var(--accent)'}">${x.s.rate}%</div>
+          <div class="rwl">${x.s.w}勝 ${x.s.l}敗</div>
+        </div>
+      </div>`).join("") + `</div>`;
+  } else {
+    html += emptyState("▤", "還沒有戰績可統計", "記錄幾場對戰後，這裡會顯示排行");
+  }
+
+  html += `<div class="section-head" style="margin-top:22px"><h2>資料備份</h2></div>
+    <div class="card">
+      <p style="margin:0 0 12px;font-size:13px;color:var(--text-dim);line-height:1.55">資料只存在這支手機的瀏覽器裡。換機或清除瀏覽器前，記得先匯出備份。</p>
+      <div class="backup">
+        <button class="btn btn-block btn-sm" onclick="exportData()">⤓ 匯出備份</button>
+        <button class="btn btn-block btn-sm" onclick="document.getElementById('importFile').click()">⤒ 匯入</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(event)">
+    </div>
+    <p class="hint">在手機瀏覽器選單點「加入主畫面」，就能像 App 一樣使用。</p>`;
+
+  el.innerHTML = html;
+}
+
+function emptyState(ico, t, sub){
+  return `<div class="empty"><div class="ico">${ico}</div><p><b>${t}</b><br><span style="font-size:13px">${sub}</span></p></div>`;
+}
+
+/* ---------- Tabs ---------- */
+function switchTab(name){
+  currentTab = name;
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  $("#tab-" + name).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  $("#fab").style.display = name === "stats" ? "none" : "grid";
+  if (name === "configs") renderConfigs();
+  if (name === "battles") renderBattles();
+  if (name === "stats") renderStats();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+$("#fab").onclick = () => { if (currentTab === "battles") openBattleModal(); else openConfigModal(); };
+
+/* ---------- Modal core ---------- */
+const modalBg = $("#modalBg"), modal = $("#modal");
+function openModal(html){ modal.innerHTML = `<div class="grab"></div>` + html; modalBg.classList.add("open"); }
+function closeModal(){ modalBg.classList.remove("open"); }
+modalBg.onclick = e => { if (e.target === modalBg) closeModal(); };
+
+/* ---------- Config modal ---------- */
+function openConfigModal(edit){
+  const c = edit || { cap:"", lock:"", axis:"", note:"" };
+  const opt = (arr, sel) => `<option value="">— 選擇 —</option>` + arr.map(o=>`<option value="${esc(o)}" ${o===sel?"selected":""}>${esc(o)}</option>`).join("");
+  openModal(`
+    <h2>${edit ? "編輯配置" : "新增配置"}</h2>
+    <label class="fld"><span>上蓋</span>
+      <select id="f-cap" onchange="onCapChange()">${opt(CAPS, c.cap)}</select></label>
+    <label class="fld" id="lockField"><span>固鎖</span>
+      <select id="f-lock" onchange="updateNamePreview()">${opt(LOCKS, c.lock)}</select></label>
+    <label class="fld"><span>軸心</span>
+      <select id="f-axis" onchange="updateNamePreview()">${opt(AXES, c.axis)}</select></label>
+    <label class="fld"><span>備注（可留空，例：加輔助刃）</span>
+      <input id="f-note" value="${esc(c.note||"")}" placeholder="例：＋輔助刃、或其他備注" maxlength="40"></label>
+    <div class="name-preview" id="namePreview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-block btn-accent" onclick="saveConfig(${edit?`'${c.id}'`:"null"})">${edit?"儲存":"新增"}</button>
+    </div>`);
+  onCapChange();
+}
+function onCapChange(){
+  const noLock = NO_LOCK_CAPS.includes($("#f-cap").value);
+  $("#lockField").style.display = noLock ? "none" : "block";
+  updateNamePreview();
+}
+function updateNamePreview(){
+  const cap = $("#f-cap").value, axis = $("#f-axis").value;
+  const lock = NO_LOCK_CAPS.includes(cap) ? "" : $("#f-lock").value;
+  const nm = [cap, lock, axis].filter(Boolean).join("");
+  $("#namePreview").innerHTML = nm
+    ? `配置名稱：<b>${esc(nm)}</b>`
+    : `<span style="opacity:.6">選好上蓋 / 固鎖 / 軸心，會自動組成名稱</span>`;
+}
+function saveConfig(id){
+  const cap = $("#f-cap").value, axis = $("#f-axis").value;
+  const noLock = NO_LOCK_CAPS.includes(cap);
+  const lock = noLock ? "" : $("#f-lock").value;
+  const bad = r => { const e = $(r); e.style.borderColor = "var(--accent)"; e.focus(); };
+  if (!cap) return bad("#f-cap");
+  if (!noLock && !lock) return bad("#f-lock");
+  if (!axis) return bad("#f-axis");
+  const data = { cap, lock, axis, note: $("#f-note").value.trim() };
+  if (id){ Object.assign(configs.find(c=>c.id===id), data); }
+  else { configs.push({ id: uid(), createdAt: new Date().toISOString(), ...data }); }
+  save(CFG_KEY, configs); closeModal(); renderConfigs();
+}
+function editConfig(id){ openConfigModal(configs.find(c=>c.id===id)); }
+function delConfig(id){
+  const s = statsFor(id);
+  const warn = s.total ? `\n\n這組有 ${s.total} 場對戰記錄，也會一併刪除。` : "";
+  if (!confirm("確定刪除「" + cfgName(id) + "」？" + warn)) return;
+  configs = configs.filter(c => c.id !== id);
+  battles = battles.filter(b => b.configId !== id);
+  save(CFG_KEY, configs); save(BAT_KEY, battles); renderConfigs();
+}
+
+/* ---------- Battle modal ---------- */
+let pendingResult = "win", pendingFinish = null;
+function openBattleModal(presetConfigId){
+  if (!configs.length){
+    openModal(`<h2>還沒有配置</h2>
+      <p style="color:var(--text-dim);font-size:14px;margin:0 0 18px">要先建立一組陀螺配置，才能記錄對戰。</p>
+      <div class="modal-actions">
+        <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-block btn-accent" onclick="closeModal();openConfigModal()">去新增配置</button>
+      </div>`);
+    return;
+  }
+  pendingResult = "win"; pendingFinish = null;
+  const opts = configs.map(c => `<option value="${c.id}" ${c.id===presetConfigId?"selected":""}>${esc(displayName(c))}</option>`).join("");
+  openModal(`
+    <h2>記錄一戰</h2>
+    <label class="fld"><span>使用配置</span>
+      <select id="b-config">${opts}</select></label>
+    <label class="fld"><span>結果</span>
+      <div class="toggle" id="b-toggle">
+        <button type="button" data-on="win" class="sel" onclick="pickResult('win')">勝 WIN</button>
+        <button type="button" data-on="loss" onclick="pickResult('loss')">敗 LOSS</button>
+      </div></label>
+    <label class="fld"><span id="finishLbl">得分方式（怎麼贏）</span>
+      <div class="finish-grid" id="b-finish">
+        ${FINISHES.map(f=>`<button type="button" data-f="${f.key}" onclick="pickFinish('${f.key}')">${f.label}<small>${f.pts}分</small></button>`).join("")}
+      </div></label>
+    <label class="fld"><span>對手（可留空）</span>
+      <input id="b-opp" placeholder="對手名稱"></label>
+    <div class="modal-actions">
+      <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
+      <button class="btn btn-block btn-accent" onclick="saveBattle()">儲存記錄</button>
+    </div>`);
+}
+function pickResult(r){
+  pendingResult = r;
+  document.querySelectorAll("#b-toggle button").forEach(b => b.classList.toggle("sel", b.dataset.on === r));
+  const lbl = $("#finishLbl");
+  if (lbl) lbl.textContent = r === "win" ? "得分方式（怎麼贏）" : "失分方式（怎麼輸）";
+}
+function pickFinish(f){
+  pendingFinish = f;
+  document.querySelectorAll("#b-finish button").forEach(b => b.classList.toggle("sel", b.dataset.f === f));
+  $("#b-finish").style.outline = "";
+}
+function saveBattle(){
+  const configId = $("#b-config").value;
+  if (!pendingFinish){
+    const g = $("#b-finish");
+    g.style.outline = "2px solid var(--accent)"; g.style.outlineOffset = "3px"; g.style.borderRadius = "13px";
+    return;
+  }
+  battles.push({
+    id: uid(), configId, result: pendingResult, finish: pendingFinish,
+    opponent: $("#b-opp").value.trim(), createdAt: new Date().toISOString()
+  });
+  save(BAT_KEY, battles); closeModal();
+  if (currentTab === "configs") renderConfigs(); else switchTab("battles");
+}
+function showDetail(id){
+  const c = configs.find(c => c.id === id); if (!c) return;
+  const s = statsFor(id);
+  const rows = (brk, cls, sign) => FINISHES.map(f => {
+    const n = brk[f.key] || 0;
+    return `<div class="dt-row">
+      <span class="dt-name">${f.label}<small>${f.pts}分/次</small></span>
+      <span class="dt-count">${n} 次</span>
+      <span class="dt-pts ${cls}">${n ? sign + (n*f.pts) : "0"}</span>
+    </div>`;
+  }).join("");
+  openModal(`
+    <h2>${esc(displayName(c))}</h2>
+    <div class="dt-head">
+      <div><div class="dt-big pf">${s.pf}</div><div class="dt-k">總得分</div></div>
+      <div class="dt-sep">:</div>
+      <div><div class="dt-big pa">${s.pa}</div><div class="dt-k">總失分</div></div>
+    </div>
+    <div class="dt-sec"><div class="dt-title">得分方式 · ${s.w} 勝</div>${rows(s.forBreak, "pf", "+")}</div>
+    <div class="dt-sec"><div class="dt-title">失分方式 · ${s.l} 敗</div>${rows(s.againstBreak, "pa", "−")}</div>
+    <div class="modal-actions"><button class="btn btn-block" onclick="closeModal()">關閉</button></div>`);
+}
+function quickBattle(id){ openBattleModal(id); }
+function delBattle(id){
+  if (!confirm("刪除這筆對戰記錄？")) return;
+  battles = battles.filter(b => b.id !== id);
+  save(BAT_KEY, battles); renderBattles();
+}
+
+/* ---------- Backup ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify({ configs, battles, exportedAt: new Date().toISOString() }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "陀螺戰績_" + new Date().toISOString().slice(0,10) + ".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importData(e){
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (!Array.isArray(d.configs) || !Array.isArray(d.battles)) throw 0;
+      if (!confirm(`匯入 ${d.configs.length} 組配置、${d.battles.length} 場記錄？\n這會覆蓋目前的資料。`)) return;
+      configs = d.configs; battles = d.battles;
+      save(CFG_KEY, configs); save(BAT_KEY, battles);
+      renderStats();
+      alert("匯入完成！");
+    } catch(err){ alert("匯入失敗：檔案格式不正確。"); }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Init ---------- */
+renderConfigs();
+</script>
