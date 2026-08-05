@@ -386,11 +386,11 @@
     <section class="tab-panel" id="tab-battles">
       <div class="section-head">
         <h2>假想對手</h2>
-        <span class="count">選對手上蓋 → 出最佳配置</span>
+        <span class="count">選對手 → 出最佳配置</span>
       </div>
       <div class="card matchup-card">
         <label class="fld" style="margin:0">
-          <span>對手上蓋</span>
+          <span>對手配置</span>
           <select id="oppQuery" onchange="renderMatchup()">
             <option value="">— 選擇對手 —</option>
           </select>
@@ -566,7 +566,7 @@ function renderBattles(){
     const f = FINISHES.find(x => x.key === b.finish);
     const pts = f ? f.pts : 0;
     const scoreTxt = `<span class="${win?'sc-w':'sc-l'}">${win?'得':'失'}${pts}分</span> · ${f ? f.label : "—"}`;
-    const meta = [scoreTxt, b.oppCap ? "vs " + esc(b.oppCap) : ""].filter(Boolean).join("  ·  ");
+    const meta = [scoreTxt, oppOf(b) ? "vs " + esc(oppOf(b)) : ""].filter(Boolean).join("  ·  ");
     return `<div class="blog">
       <div class="res-dot ${win?'win':'loss'}">${win?'勝':'敗'}</div>
       <div class="bl-main">
@@ -647,14 +647,39 @@ function switchTab(name){
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   $("#fab").style.display = name === "stats" ? "none" : "grid";
   if (name === "configs") renderConfigs();
-  if (name === "battles"){ renderBattles(); renderMatchup(); }
+  if (name === "battles"){ renderBattles(); fillOppQuery(); renderMatchup(); }
   if (name === "stats") renderStats();
 }
 
-/* ---------- 假想對手：對上某上蓋，找我方最佳配置 ---------- */
-function statsVsOpp(oppCap){
+/* ---------- 假想對手：對上某對手配置，找我方最佳配置 ---------- */
+// 對手欄位：新記錄存 opponent，也相容舊的 oppCap
+function oppOf(b){ return (b.opponent ?? b.oppCap ?? "").trim(); }
+// 取「上蓋」＝開頭連續的中文（武神J → 武神）
+function capOf(s){ const t = String(s || "").trim(); const m = t.match(/^[一-鿿]+/); return m ? m[0] : t; }
+function oppValues(){ return [...new Set(battles.map(oppOf).filter(Boolean))].sort(); }  // 完整輸入
+function hasVariants(cap){ return oppValues().some(v => capOf(v) === cap && v !== cap); }
+function isCapQuery(q){ return q === capOf(q); }   // 純中文＝上蓋層級（聚合），含英數＝特定變體
+function fillOppQuery(){
+  const sel = $("#oppQuery"); if (!sel) return;
+  const cur = sel.value, full = oppValues();
+  const caps = [...new Set(full.map(capOf))].sort();
+  let opts = `<option value="">— 選擇對手 —</option>`;
+  const allVals = [];
+  caps.forEach(cap => {
+    opts += `<option value="${esc(cap)}">${esc(cap)}${hasVariants(cap) ? "（全部）" : ""}</option>`;
+    allVals.push(cap);
+    full.filter(v => capOf(v) === cap && v !== cap).sort().forEach(v => {
+      opts += `<option value="${esc(v)}">　└ ${esc(v)}</option>`;
+      allVals.push(v);
+    });
+  });
+  sel.innerHTML = opts;
+  if (allVals.includes(cur)) sel.value = cur;
+}
+function statsVsOpp(q){
+  const byCap = isCapQuery(q);
   return configs.map(c => {
-    const bs = battles.filter(b => b.configId === c.id && b.oppCap === oppCap);
+    const bs = battles.filter(b => b.configId === c.id && (byCap ? capOf(oppOf(b)) === q : oppOf(b) === q));
     const w = bs.filter(b => b.result === "win").length;
     return { c, w, l: bs.length - w, total: bs.length, rate: bs.length ? Math.round(w/bs.length*100) : 0 };
   }).filter(x => x.total > 0).sort((a,b) => b.rate - a.rate || b.total - a.total);
@@ -664,14 +689,15 @@ function renderMatchup(){
   const box = $("#matchupResult");
   const opp = sel.value;
   if (!opp){ box.innerHTML = ""; return; }
+  const oppLabel = (isCapQuery(opp) && hasVariants(opp)) ? opp + "（全部）" : opp;
   const ranked = statsVsOpp(opp);
   if (!ranked.length){
-    box.innerHTML = `<div class="mu-empty">還沒有對上「${esc(opp)}」的記錄。<br>記幾場（對手上蓋選 ${esc(opp)}）之後就會給建議。</div>`;
+    box.innerHTML = `<div class="mu-empty">還沒有對上「${esc(oppLabel)}」的記錄。<br>記幾場（對手配置填 ${esc(opp)}）之後就會給建議。</div>`;
     return;
   }
   const best = ranked[0];
   let html = `<div class="mu-best">
-    <div class="mu-tag">對上 ${esc(opp)} · 建議用</div>
+    <div class="mu-tag">對上 ${esc(oppLabel)} · 建議用</div>
     <div class="mu-name">${esc(displayName(best.c))}</div>
     <div class="mu-stat"><b class="${best.rate>=50?'mu-hi':'mu-lo'}">${best.rate}%</b> 勝率 · ${best.w}勝 ${best.l}敗</div>
   </div>`;
@@ -775,8 +801,9 @@ function openBattleModal(presetConfigId){
       <div class="finish-grid" id="b-finish">
         ${FINISHES.map(f=>`<button type="button" data-f="${f.key}" onclick="pickFinish('${f.key}')">${f.label}<small>${f.pts}分</small></button>`).join("")}
       </div></label>
-    <label class="fld"><span>對手上蓋（可留空，用來算剋制勝率）</span>
-      <select id="b-opp"><option value="">— 未指定 —</option>${CAPS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label>
+    <label class="fld"><span>對手配置（可留空，例：武神 或 武神J）</span>
+      <input id="b-opp" list="oppList" placeholder="輸入對手上蓋或配置" maxlength="20" autocomplete="off">
+      <datalist id="oppList">${oppValues().map(o=>`<option value="${esc(o)}"></option>`).join("")}</datalist></label>
     <div class="modal-actions">
       <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
       <button class="btn btn-block btn-accent" onclick="saveBattle()">儲存記錄</button>
@@ -802,7 +829,7 @@ function saveBattle(){
   }
   battles.push({
     id: uid(), configId, result: pendingResult, finish: pendingFinish,
-    oppCap: $("#b-opp").value, createdAt: new Date().toISOString()
+    opponent: $("#b-opp").value.trim(), createdAt: new Date().toISOString()
   });
   save(BAT_KEY, battles); closeModal();
   if (currentTab === "configs") renderConfigs(); else switchTab("battles");
@@ -893,7 +920,7 @@ const SHARE_SVG = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" s
 const PLUS_SVG = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
 
 /* ---------- Init ---------- */
-$("#oppQuery").innerHTML = `<option value="">— 選擇對手 —</option>` + CAPS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("");
+fillOppQuery();
 renderConfigs();
 maybeShowInstallTip();
 </script>
