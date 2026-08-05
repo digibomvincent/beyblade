@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="陀螺戰績庫">
 <meta name="theme-color" content="#0E1116">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
 <title>陀螺戰績庫 · Beyblade X</title>
 <style>
   html { -webkit-text-size-adjust: 100%; }
@@ -76,7 +78,7 @@
     background: color-mix(in srgb, var(--bg) 86%, transparent);
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
-    padding: 14px 18px 12px;
+    padding: calc(14px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) 12px calc(18px + env(safe-area-inset-left));
     display: flex; align-items: center; gap: 12px;
   }
   .logo {
@@ -319,6 +321,35 @@
   .backup { display: flex; gap: 10px; margin-top: 8px; }
   .hint { font-size: 12px; color: var(--text-dim); text-align: center; margin: 14px 4px 0; line-height: 1.5; }
   .danger { color: var(--accent); }
+
+  /* 假想對手 */
+  .matchup-card { padding: 15px 16px; }
+  #matchupResult:not(:empty) { margin-top: 14px; }
+  .mu-best {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+    border-radius: 14px; padding: 14px 16px;
+  }
+  .mu-tag { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+  .mu-name { font-size: 22px; font-weight: 800; letter-spacing: -.01em; margin: 4px 0 3px; }
+  .mu-stat { font-size: 13px; color: var(--text-dim); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .mu-stat b { font-size: 17px; }
+  .mu-hi { color: var(--win); } .mu-lo { color: var(--accent); }
+  .mu-rest { margin-top: 10px; border-top: 1px solid var(--border); }
+  .mu-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
+  .mu-row:last-child { border-bottom: 0; }
+  .mu-cfg { font-weight: 700; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mu-r { font-family: var(--mono); font-size: 12.5px; color: var(--text-dim); white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
+  .mu-empty { font-size: 13px; color: var(--text-dim); line-height: 1.6; text-align: center; padding: 8px 4px 2px; }
+
+  /* 加入主畫面教學 */
+  .tip-lead { font-size: 14px; color: var(--text-dim); margin: -4px 0 14px; line-height: 1.55; }
+  .tip-steps { margin: 0 0 16px; padding-left: 20px; display: flex; flex-direction: column; gap: 11px; }
+  .tip-steps li { font-size: 14.5px; line-height: 1.5; }
+  .tip-ico { display: inline-flex; vertical-align: -4px; margin-left: 3px; color: var(--accent); }
+  .tip-img { width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 14px; display: block; }
+  .tip-check { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--text-dim); margin-bottom: 14px; cursor: pointer; }
+  .tip-check input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
 </style>
 </head>
 <body>
@@ -354,6 +385,19 @@
     <!-- BATTLES -->
     <section class="tab-panel" id="tab-battles">
       <div class="section-head">
+        <h2>假想對手</h2>
+        <span class="count">選對手上蓋 → 出最佳配置</span>
+      </div>
+      <div class="card matchup-card">
+        <label class="fld" style="margin:0">
+          <span>對手上蓋</span>
+          <select id="oppQuery" onchange="renderMatchup()">
+            <option value="">— 選擇對手 —</option>
+          </select>
+        </label>
+        <div id="matchupResult"></div>
+      </div>
+      <div class="section-head" style="margin-top:22px">
         <h2>對戰記錄</h2>
         <span class="count" id="batCount"></span>
       </div>
@@ -522,7 +566,7 @@ function renderBattles(){
     const f = FINISHES.find(x => x.key === b.finish);
     const pts = f ? f.pts : 0;
     const scoreTxt = `<span class="${win?'sc-w':'sc-l'}">${win?'得':'失'}${pts}分</span> · ${f ? f.label : "—"}`;
-    const meta = [scoreTxt, b.opponent ? "vs " + esc(b.opponent) : ""].filter(Boolean).join("  ·  ");
+    const meta = [scoreTxt, b.oppCap ? "vs " + esc(b.oppCap) : ""].filter(Boolean).join("  ·  ");
     return `<div class="blog">
       <div class="res-dot ${win?'win':'loss'}">${win?'勝':'敗'}</div>
       <div class="bl-main">
@@ -603,8 +647,40 @@ function switchTab(name){
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
   $("#fab").style.display = name === "stats" ? "none" : "grid";
   if (name === "configs") renderConfigs();
-  if (name === "battles") renderBattles();
+  if (name === "battles"){ renderBattles(); renderMatchup(); }
   if (name === "stats") renderStats();
+}
+
+/* ---------- 假想對手：對上某上蓋，找我方最佳配置 ---------- */
+function statsVsOpp(oppCap){
+  return configs.map(c => {
+    const bs = battles.filter(b => b.configId === c.id && b.oppCap === oppCap);
+    const w = bs.filter(b => b.result === "win").length;
+    return { c, w, l: bs.length - w, total: bs.length, rate: bs.length ? Math.round(w/bs.length*100) : 0 };
+  }).filter(x => x.total > 0).sort((a,b) => b.rate - a.rate || b.total - a.total);
+}
+function renderMatchup(){
+  const sel = $("#oppQuery"); if (!sel) return;
+  const box = $("#matchupResult");
+  const opp = sel.value;
+  if (!opp){ box.innerHTML = ""; return; }
+  const ranked = statsVsOpp(opp);
+  if (!ranked.length){
+    box.innerHTML = `<div class="mu-empty">還沒有對上「${esc(opp)}」的記錄。<br>記幾場（對手上蓋選 ${esc(opp)}）之後就會給建議。</div>`;
+    return;
+  }
+  const best = ranked[0];
+  let html = `<div class="mu-best">
+    <div class="mu-tag">對上 ${esc(opp)} · 建議用</div>
+    <div class="mu-name">${esc(displayName(best.c))}</div>
+    <div class="mu-stat"><b class="${best.rate>=50?'mu-hi':'mu-lo'}">${best.rate}%</b> 勝率 · ${best.w}勝 ${best.l}敗</div>
+  </div>`;
+  if (ranked.length > 1){
+    html += `<div class="mu-rest">` + ranked.slice(1).map(x =>
+      `<div class="mu-row"><span class="mu-cfg">${esc(displayName(x.c))}</span><span class="mu-r"><b class="${x.rate>=50?'mu-hi':'mu-lo'}">${x.rate}%</b> · ${x.w}勝${x.l}敗</span></div>`
+    ).join("") + `</div>`;
+  }
+  box.innerHTML = html;
 }
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 $("#fab").onclick = () => { if (currentTab === "battles") openBattleModal(); else openConfigModal(); };
@@ -699,8 +775,8 @@ function openBattleModal(presetConfigId){
       <div class="finish-grid" id="b-finish">
         ${FINISHES.map(f=>`<button type="button" data-f="${f.key}" onclick="pickFinish('${f.key}')">${f.label}<small>${f.pts}分</small></button>`).join("")}
       </div></label>
-    <label class="fld"><span>對手（可留空）</span>
-      <input id="b-opp" placeholder="對手名稱"></label>
+    <label class="fld"><span>對手上蓋（可留空，用來算剋制勝率）</span>
+      <select id="b-opp"><option value="">— 未指定 —</option>${CAPS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("")}</select></label>
     <div class="modal-actions">
       <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
       <button class="btn btn-block btn-accent" onclick="saveBattle()">儲存記錄</button>
@@ -726,7 +802,7 @@ function saveBattle(){
   }
   battles.push({
     id: uid(), configId, result: pendingResult, finish: pendingFinish,
-    opponent: $("#b-opp").value.trim(), createdAt: new Date().toISOString()
+    oppCap: $("#b-opp").value, createdAt: new Date().toISOString()
   });
   save(BAT_KEY, battles); closeModal();
   if (currentTab === "configs") renderConfigs(); else switchTab("battles");
@@ -786,8 +862,40 @@ function importData(e){
   reader.readAsText(file);
 }
 
+/* ---------- 加入主畫面教學 ---------- */
+const A2HS_KEY = "bx_a2hs_dismissed";
+function isStandalone(){
+  return window.navigator.standalone === true ||
+    window.matchMedia("(display-mode: standalone)").matches;
+}
+function maybeShowInstallTip(){
+  if (isStandalone()) return;                       // 已加入主畫面就不用教
+  if (localStorage.getItem(A2HS_KEY) === "1") return; // 使用者勾了不再顯示
+  openModal(`
+    <h2>把它變成 App 📲</h2>
+    <p class="tip-lead">在主畫面開啟才能全螢幕、資料也更穩。三步驟：</p>
+    <ol class="tip-steps">
+      <li><b>點下方的分享鈕</b> <span class="tip-ico">${SHARE_SVG}</span></li>
+      <li>往下滑，選 <b>「加入主畫面」</b> <span class="tip-ico">${PLUS_SVG}</span></li>
+      <li>右上角按 <b>「加入」</b>，完成！</li>
+    </ol>
+    <img src="add-to-home.png" alt="加入主畫面示意" class="tip-img" onerror="this.style.display='none'">
+    <label class="tip-check"><input type="checkbox" id="a2hsHide"> 不再顯示</label>
+    <div class="modal-actions">
+      <button class="btn btn-block btn-accent" onclick="dismissInstallTip()">知道了</button>
+    </div>`);
+}
+function dismissInstallTip(){
+  if ($("#a2hsHide") && $("#a2hsHide").checked) localStorage.setItem(A2HS_KEY, "1");
+  closeModal();
+}
+const SHARE_SVG = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg>`;
+const PLUS_SVG = `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
+
 /* ---------- Init ---------- */
+$("#oppQuery").innerHTML = `<option value="">— 選擇對手 —</option>` + CAPS.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join("");
 renderConfigs();
+maybeShowInstallTip();
 </script>
 </body>
 </html>

@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# 3D 列印模型 / 壓縮檔（不放進網站 repo）
+38+bit_stls/
+38+bit_stls.zip
+
+# 暫存
+*.b64
