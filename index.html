@@ -437,8 +437,8 @@
 <script>
 "use strict";
 const CFG_KEY = "bx_configs_v1", BAT_KEY = "bx_battles_v1", THEME_KEY = "bx_theme";
-const CAPS = ["武神","隕星","突擊","獅鷲","銀狼","神杖","爆刃","堡壘","閃擊","鞭打","邪神"];
-const LOCKS = ["150","160","370","450","570","660","870","960"];
+const CAPS = ["武神","隕星","突擊","獅鷲","銀狼","神杖","爆刃","堡壘","閃擊","鞭打","邪神","鯊魚"];
+const LOCKS = ["150","160","360","370","450","570","660","870","960"];
 const AXES = ["I","FF","J","FB","Nr","H","L","Y","A","DB","LF","UN"];
 const NO_LOCK_CAPS = ["武神","獅鷲"];
 const FINISHES = [
@@ -471,6 +471,23 @@ let battles = load(BAT_KEY);
     if (!configs.some(c => c.id === d.id)) { configs.push({ ...d, createdAt: "seed" }); changed = true; }
   });
   if (changed) save(CFG_KEY, configs);
+})();
+
+// 一次性資料修正（用旗標記錄已跑過，不影響日後正常輸入）
+(function migrate(){
+  const MIG_KEY = "bx_migrations";
+  let done = [];
+  try { done = JSON.parse(localStorage.getItem(MIG_KEY)) || []; } catch(e){}
+  let changed = false;
+  if (!done.includes("opp-wudb-wb")){            // 對手名稱 武神DB → 武神WB
+    battles.forEach(b => {
+      if (b.opponent === "武神DB") { b.opponent = "武神WB"; changed = true; }
+      if (b.oppCap === "武神DB")   { b.oppCap   = "武神WB"; changed = true; }
+    });
+    done.push("opp-wudb-wb");
+  }
+  if (changed) save(BAT_KEY, battles);
+  localStorage.setItem(MIG_KEY, JSON.stringify(done));
 })();
 let currentTab = "configs";
 
