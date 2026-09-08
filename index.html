@@ -737,17 +737,22 @@ modalBg.onclick = e => { if (e.target === modalBg) closeModal(); };
 /* ---------- Config modal ---------- */
 function openConfigModal(edit){
   const c = edit || { cap:"", lock:"", axis:"", note:"" };
-  const opt = (arr, sel) => `<option value="">— 選擇 —</option>` + arr.map(o=>`<option value="${esc(o)}" ${o===sel?"selected":""}>${esc(o)}</option>`).join("");
+  const uniq = arr => [...new Set(arr.filter(Boolean))];
+  const capOpts  = uniq([...CAPS,  ...configs.map(x=>x.cap)]);
+  const lockOpts = uniq([...LOCKS, ...configs.map(x=>x.lock)]);
+  const axisOpts = uniq([...AXES,  ...configs.map(x=>x.axis)]);
+  const dl = (id, arr) => `<datalist id="${id}">${arr.map(o=>`<option value="${esc(o)}"></option>`).join("")}</datalist>`;
   openModal(`
     <h2>${edit ? "編輯配置" : "新增配置"}</h2>
     <label class="fld"><span>上蓋</span>
-      <select id="f-cap" onchange="onCapChange()">${opt(CAPS, c.cap)}</select></label>
+      <input id="f-cap" list="capList" value="${esc(c.cap||"")}" oninput="onCapChange()" placeholder="打字或選，例：武神" maxlength="12" autocomplete="off"></label>
     <label class="fld" id="lockField"><span>固鎖</span>
-      <select id="f-lock" onchange="updateNamePreview()">${opt(LOCKS, c.lock)}</select></label>
+      <input id="f-lock" list="lockList" value="${esc(c.lock||"")}" oninput="updateNamePreview()" placeholder="例：150" maxlength="8" autocomplete="off"></label>
     <label class="fld"><span>軸心</span>
-      <select id="f-axis" onchange="updateNamePreview()">${opt(AXES, c.axis)}</select></label>
+      <input id="f-axis" list="axisList" value="${esc(c.axis||"")}" oninput="updateNamePreview()" placeholder="例：I" maxlength="8" autocomplete="off"></label>
     <label class="fld"><span>備注（可留空，例：加輔助刃）</span>
       <input id="f-note" value="${esc(c.note||"")}" placeholder="例：＋輔助刃、或其他備注" maxlength="40"></label>
+    ${dl("capList",capOpts)}${dl("lockList",lockOpts)}${dl("axisList",axisOpts)}
     <div class="name-preview" id="namePreview"></div>
     <div class="modal-actions">
       <button class="btn btn-block btn-ghost" onclick="closeModal()">取消</button>
@@ -756,22 +761,22 @@ function openConfigModal(edit){
   onCapChange();
 }
 function onCapChange(){
-  const noLock = NO_LOCK_CAPS.includes($("#f-cap").value);
+  const noLock = NO_LOCK_CAPS.includes($("#f-cap").value.trim());
   $("#lockField").style.display = noLock ? "none" : "block";
   updateNamePreview();
 }
 function updateNamePreview(){
-  const cap = $("#f-cap").value, axis = $("#f-axis").value;
-  const lock = NO_LOCK_CAPS.includes(cap) ? "" : $("#f-lock").value;
+  const cap = $("#f-cap").value.trim(), axis = $("#f-axis").value.trim();
+  const lock = NO_LOCK_CAPS.includes(cap) ? "" : $("#f-lock").value.trim();
   const nm = [cap, lock, axis].filter(Boolean).join("");
   $("#namePreview").innerHTML = nm
     ? `配置名稱：<b>${esc(nm)}</b>`
-    : `<span style="opacity:.6">選好上蓋 / 固鎖 / 軸心，會自動組成名稱</span>`;
+    : `<span style="opacity:.6">打上蓋 / 固鎖 / 軸心，會自動組成名稱</span>`;
 }
 function saveConfig(id){
-  const cap = $("#f-cap").value, axis = $("#f-axis").value;
+  const cap = $("#f-cap").value.trim(), axis = $("#f-axis").value.trim();
   const noLock = NO_LOCK_CAPS.includes(cap);
-  const lock = noLock ? "" : $("#f-lock").value;
+  const lock = noLock ? "" : $("#f-lock").value.trim();
   const bad = r => { const e = $(r); e.style.borderColor = "var(--accent)"; e.focus(); };
   if (!cap) return bad("#f-cap");
   if (!noLock && !lock) return bad("#f-lock");
